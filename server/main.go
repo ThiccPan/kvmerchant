@@ -31,7 +31,10 @@ func main() {
 			conn.Write([]byte("err"))
 			break
 		}
-		conn.Write([]byte("pong"))
 		log.Println("value:", val)
+		
+		// response to client
+		w := NewWriter(conn)
+		w.Write(Value{typ: "string", str: "OK"})
 	}
 }

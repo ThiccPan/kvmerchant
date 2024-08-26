@@ -24,6 +24,22 @@ type Value struct {
 	array []Value
 }
 
+type Writer struct {
+	writer io.Writer
+}
+
+func NewWriter(writer io.Writer) *Writer {
+	return &Writer{
+		writer,
+	}
+}
+
+func (w *Writer) Write(v Value) error {
+	res := v.Marshal()
+	_, err := w.writer.Write(res)
+	return err
+}
+
 func (v Value) Marshal() []byte {
 	switch v.typ {
 	case "array":
