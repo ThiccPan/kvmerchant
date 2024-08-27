@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 )
 
 func main() {
@@ -22,19 +23,45 @@ func main() {
 	}
 	fmt.Println("new conn:", conn)
 	defer conn.Close()
+	w := NewWriter(conn)
 
 	for {
+		fmt.Println("start")
 		resp := NewResp(conn)
-		val, err := resp.Read()
+		value, err := resp.Read()
 		if err != nil {
 			log.Println("error:", err)
 			conn.Write([]byte("err"))
 			break
 		}
-		log.Println("value:", val)
+		log.Println("value:", value)
+
+		if value.typ != "array" {
+			fmt.Println("req is not an array")
+			w.Write(Value{typ: "string", str: ""})
+			continue
+		}
+
+		if len(value.array) == 0 {
+			fmt.Println("empty array")
+			w.Write(Value{typ: "string", str: ""})
+			continue
+		}
+
+		command := strings.ToUpper(value.array[0].bulk)
+		handlerFunc, ok := handler[command]
+		args := value.array[1:]
 		
+		if !ok {
+			fmt.Println("invalid command:", command)
+			w.Write(Value{typ: "string", str: ""})
+			continue
+		}
+
+		handlerVal := handlerFunc(args)
+		fmt.Println("handlerval:", handlerVal)
+
 		// response to client
-		w := NewWriter(conn)
-		w.Write(Value{typ: "string", str: "OK"})
+		w.Write(handlerVal)
 	}
 }
